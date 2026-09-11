@@ -1,64 +1,60 @@
-const { Op } = require("sequelize");
 const Student = require("./students.model");
+
+const findStudentById = async (studentId) => {
+    return await Student.findByPk(studentId);
+};
+
+const findStudentByEmail = async (email) => {
+    return await Student.findOne({
+        where: { email }
+    });
+};
+
+const findStudentByUSN = async (usn) => {
+    return await Student.findOne({
+        where: { usn }
+    });
+};
 
 const findAllStudents = async (filters = {}, page = 1, limit = 10) => {
 
-    const where = {};
-
-    if (filters.usn) {
-        where.usn = {
-            [Op.like]: `%${filters.usn}%`
-        };
-    }
-
-    if (filters.name) {
-        where.name = {
-            [Op.like]: `%${filters.name}%`
-        };
-    }
-
-    if (filters.email) {
-        where.email = {
-            [Op.like]: `%${filters.email}%`
-        };
-    }
-
-    if (filters.department) {
-        where.department = filters.department;
-    }
-
-    if (filters.semester) {
-        where.semester = filters.semester;
-    }
-
-    if (filters.section) {
-        where.section = filters.section;
-    }
-
-    if (filters.course) {
-        where.course = filters.course;
-    }
-
     const offset = (page - 1) * limit;
-
-    const { count, rows } = await Student.findAndCountAll({
-        where,
+    
+    return await Student.findAll({
+        where: filters,
         limit,
         offset,
         order: [["student_id", "DESC"]]
     });
+};
 
-    return {
-        students: rows,
-        pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
-            totalStudents: count,
-            limit
+const insertStudent = async (student) => {
+    return await Student.create(student);
+};
+
+const updateStudent = async (studentId, student) => {
+    
+    return await Student.update(
+        student,
+        {
+            where: { student_id: studentId }
         }
-    };
+    );
+};
+
+const deleteStudent = async (studentId) => {
+    
+    return await Student.destroy({
+        where: { student_id: studentId }
+    });
 };
 
 module.exports = {
-    findAllStudents
+    findStudentById,
+    findStudentByEmail,
+    findStudentByUSN,
+    findAllStudents,
+    insertStudent,
+    updateStudent,
+    deleteStudent
 };
