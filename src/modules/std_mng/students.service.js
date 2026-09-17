@@ -1,5 +1,5 @@
 const studentRepository = require("./students.repository");
-const ApiError = require("../../shared/errors/ApiError");
+const ApiError = require("../../shared/utils/ApiError");
 
 const addStd = async ({ usn, name, email, phone, department, semester, section, course }) => {
 
