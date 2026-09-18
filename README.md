@@ -130,3 +130,16 @@ VALUES ('Admin', 'admin@example.com', '<hash_from_above>', 'ADMIN', 'ACTIVE', NO
 ## 8. What's Intentionally Not Here
 
 No Redis, Docker, message queues, microservices, or global `controllers/services/repositories` folders — per the project constraints. No other modules (students, exams, etc.) — only the Auth module, as requested.
+
+## 9. Bulk Upload Students
+
+Send a `multipart/form-data` request to `POST /api/v1/students/bulk-upload` with an admin bearer token. Attach the CSV using the field name `file`.
+
+The CSV must contain these headers:
+
+```csv
+usn,name,email,phone,department,semester,section,course
+1AB23CS001,Student One,student1@example.com,9876543210,CSE,1,A,Computer Science
+```
+
+Uploads are limited to 5 MB. The entire batch is rejected if a required value is missing, a USN/email is duplicated, or a student already exists.

@@ -1,4 +1,6 @@
 const Student = require("./students.model");
+const { Op } = require("sequelize");
+const sequelize = require("../../config/database");
 
 const findStudentById = async (studentId) => {
     return await Student.findByPk(studentId);
@@ -16,6 +18,18 @@ const findStudentByUSN = async (usn) => {
     });
 };
 
+const findStudentsByUSNs = async (usns) => {
+    return await Student.findAll({
+        where: { usn: { [Op.in]: usns } }
+    });
+};
+
+const findStudentsByEmails = async (emails) => {
+    return await Student.findAll({
+        where: { email: { [Op.in]: emails } }
+    });
+};
+
 const findAllStudents = async (filters = {}, page = 1, limit = 10) => {
 
     const offset = (page - 1) * limit;
@@ -30,6 +44,12 @@ const findAllStudents = async (filters = {}, page = 1, limit = 10) => {
 
 const insertStudent = async (student) => {
     return await Student.create(student);
+};
+
+const insertStudents = async (students) => {
+    return await sequelize.transaction(async (transaction) => {
+        return await Student.bulkCreate(students, { transaction, returning: true });
+    });
 };
 
 const updateStudent = async (studentId, student) => {
@@ -53,8 +73,11 @@ module.exports = {
     findStudentById,
     findStudentByEmail,
     findStudentByUSN,
+    findStudentsByUSNs,
+    findStudentsByEmails,
     findAllStudents,
     insertStudent,
+    insertStudents,
     updateStudent,
     deleteStudent
 };
