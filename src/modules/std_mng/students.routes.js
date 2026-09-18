@@ -13,7 +13,10 @@ const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: { fileSize: 5 * 1024 * 1024 },
 	fileFilter: (req, file, callback) => {
-		if (file.mimetype !== "text/csv" && file.mimetype !== "application/vnd.ms-excel") {
+		const isCsvMimeType = ["text/csv", "application/vnd.ms-excel"].includes(file.mimetype);
+		const hasCsvExtension = file.originalname.toLowerCase().endsWith(".csv");
+
+		if (!isCsvMimeType && !hasCsvExtension) {
 			return callback(new ApiError(400, "Only CSV files are allowed"));
 		}
 
@@ -22,11 +25,16 @@ const upload = multer({
 });
 
 const uploadCsv = (req, res, next) => {
-	upload.single("file")(req, res, (error) => {
+	upload.any()(req, res, (error) => {
 		if (error) {
 			return next(new ApiError(400, error.message));
 		}
 
+		if (!req.files || req.files.length !== 1) {
+			return next(new ApiError(400, "Exactly one CSV file is required"));
+		}
+
+		req.file = req.files[0];
 		next();
 	});
 };

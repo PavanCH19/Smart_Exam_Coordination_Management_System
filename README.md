@@ -133,7 +133,7 @@ No Redis, Docker, message queues, microservices, or global `controllers/services
 
 ## 9. Bulk Upload Students
 
-Send a `multipart/form-data` request to `POST /api/v1/students/bulk-upload` with an admin bearer token. Attach the CSV using the field name `file`.
+Send a `multipart/form-data` request to `POST /api/v1/students/bulk-upload` with an admin bearer token. Attach exactly one CSV file; `file` is the recommended field name.
 
 The CSV must contain these headers:
 
