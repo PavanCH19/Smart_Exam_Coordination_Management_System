@@ -72,6 +72,12 @@ DB_DDL_AUTO=none
 JWT_ACCESS_SECRET=replace_with_a_secret
 JWT_ACCESS_EXPIRES_IN=1d
 NODE_ENV=development
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
 ```
 
 Create `client/.env` with the API URL:
