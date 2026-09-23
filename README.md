@@ -1,95 +1,114 @@
-# Smart Exam Coordination System — Auth Module
+# Smart Exam Coordination and Management System
 
-A standalone, feature-based Auth module built with Express.js, Sequelize (MySQL), Joi, bcrypt, and JWT.
+A full-stack application for planning and coordinating academic examinations. The system provides separate portals for administrators, staff, and students, with role-based access to exam scheduling, room allocation, seating, attendance, notifications, reports, and audit history.
 
-## 1. Architecture
+## Project Structure
 
-```
-Route -> Validation (Joi) -> Controller -> Service -> Repository -> Model -> MySQL
-```
-
-- **Routes** (`auth.routes.js`): wire URLs to validation + controller.
-- **Validation** (`auth.validation.js`): Joi schemas, isolated from business logic.
-- **Controller** (`auth.controller.js`): HTTP only — reads `req`, calls the service, writes `res`. No DB queries, no password logic, no JWT logic.
-- **Service** (`auth.service.js`): all business logic — password hashing/comparison, JWT generation, token expiry rules, generic forgot-password behavior.
-- **Repository** (`auth.repository.js`): only database operations via Sequelize. No `req`/`res`, no HTTP status codes, no business decisions.
-- **Model** (`auth.model.js` + `models/*.js`): Sequelize table definitions only, no business logic.
-
-Everything Auth-related lives inside `src/modules/auth/`. Nothing global like `controllers/` or `services/` exists at the project root.
-
-### Why a model file?
-The Auth module stores users in the `users` table. Its Sequelize definition lives under `modules/auth/models/`, and `auth.model.js` is the module's model entry point.
-
-### Why a `shared/` folder?
-`authenticate.js`, `authorize.js`, and `validate.js` are generic middleware that will be reused by other modules later (students, staff, exams, etc.), so they live outside the Auth module in `src/shared/middleware/`. This is not a global `controllers/services/repositories` structure — it's just cross-cutting middleware, which is standard practice even in a strict feature-based layout.
-
-`src/shared/utils/jwt.util.js` centralizes token signing/verification so both the service and the `authenticate` middleware use identical logic. `ApiError.js` is a tiny custom error class so the service layer can throw `new ApiError(401, "...")` and the central error handler knows the right status code — this keeps HTTP status codes out of the service and repository, per the rules.
-
-## 2. Folder Structure
-
-```
-src/
-├── server.js
-├── config/
-│   └── database.js
-├── shared/
-│   ├── middleware/
-│   │   ├── authenticate.js
-│   │   ├── authorize.js
-│   │   ├── validate.js
-│   │   └── errorHandler.js
-│   └── utils/
-│       ├── jwt.util.js
-│       └── ApiError.js
-└── modules/
-    └── auth/
-        ├── auth.controller.js
-        ├── auth.service.js
-        ├── auth.repository.js
-        ├── auth.model.js
-        ├── auth.routes.js
-        ├── auth.validation.js
-        ├── index.js
-        └── models/
-          └── user.model.js
+```text
+client/   React 19 frontend built with Vite
+server/   Express API backed by Sequelize and MySQL
 ```
 
-## 3. Database Design
+### Client
 
-**users**
-| column | type |
-|---|---|
-| id | INT, PK, auto-increment |
-| name | VARCHAR |
-| email | VARCHAR, unique |
-| password | VARCHAR (bcrypt hash) |
-| role | ENUM('ADMIN','STAFF','STUDENT') |
-| status | ENUM('ACTIVE','INACTIVE') |
-| created_at / updated_at | DATETIME |
+The frontend uses React, React Router, Redux Toolkit, Axios, and Vite. It includes:
 
-## 4. Setup
+- Admin management for users, departments, courses, subjects, rooms, exams, timetables, allocations, seating, reports, issues, notifications, and audit logs.
+- Staff workflows for dashboards, attendance, duties, issues, and notifications.
+- Student workflows for dashboards, admit cards, timetables, venue and seat details, and notifications.
+- Protected routes and JWT authentication through the shared Axios configuration.
+
+The frontend API contract is documented in [client/API_DOCUMENTATION.md](client/API_DOCUMENTATION.md). It uses `VITE_API_BASE_URL`, which defaults to `http://localhost:5000/api/v1`.
+
+### Server
+
+The backend is organized by feature modules and follows this request flow:
+
+```text
+Route -> Joi validation -> Controller -> Service -> Repository -> Sequelize model -> MySQL
+```
+
+The server provides JWT authentication, bcrypt password handling, role-based authorization, CSV student bulk upload, PDF/download support, email configuration, request logging, and the following domain areas:
+
+- Authentication and users
+- Students and staff
+- Departments, courses, and subjects
+- Rooms, exams, and timetables
+- Room allocations, staff duties, and seating
+- Attendance and admit cards
+- Notifications, issues, reports, and audit logs
+
+Authentication routes are available under `/api/v1/auth`. Login returns a bearer token used by the frontend for subsequent requests.
+
+## Prerequisites
+
+- Node.js 18 or newer
+- MySQL
+- A database named `smart_exam` or another database configured in the server environment
+
+## Installation
+
+Install dependencies in both applications:
 
 ```bash
+cd server
 npm install
-cp .env.example .env   # then fill in real DB credentials and JWT secrets
-npm run dev             # or: npm start
+
+cd ../client
+npm install
 ```
 
-Sequelize's `sync()` in `server.js` will create the three tables automatically against the MySQL database named in `.env` (create the database itself first: `CREATE DATABASE smart_exam;`).
+Create `server/.env` from `server/.env.example` and configure the database, JWT, and optional SMTP values:
 
-## 5. Endpoints
-
-All routes are prefixed with `/api/v1/auth`.
-
-| Method | Path | Auth required |
-|---|---|---|
-| POST | /login | No |
-| POST | /change-password | Yes (Bearer access token) |
-
-## 6. Postman Examples
-
-### Login
+```env
+PORT=5000
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=smart_exam
+DB_USER=root
+DB_PASSWORD=your_password
+DB_SHOW_SQL=false
+DB_DDL_AUTO=none
+JWT_ACCESS_SECRET=replace_with_a_secret
+JWT_ACCESS_EXPIRES_IN=1d
+NODE_ENV=development
 ```
+
+Create `client/.env` with the API URL:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api/v1
+```
+
+## Running the Application
+
+Start the API in one terminal:
+
+```bash
+cd server
+npm run dev
+```
+
+Start the frontend in another terminal:
+
+```bash
+cd client
+npm run dev
+```
+
+Vite will display the local frontend URL, normally `http://localhost:5173`.
+
+The server's `DB_DDL_AUTO` setting controls Sequelize synchronization:
+
+- `none`: use the default Sequelize synchronization behavior.
+- `update`: use `sync({ alter: true })`.
+- `create`: recreate tables with `sync({ force: true })`.
+
+Use `create` only for a disposable development database.
+
+## Authentication Example
+
+```http
 POST http://localhost:5000/api/v1/auth/login
 Content-Type: application/json
 
@@ -99,47 +118,45 @@ Content-Type: application/json
 }
 ```
 
-### Change Password
-```
-POST http://localhost:5000/api/v1/auth/change-password
-Content-Type: application/json
+Send the returned token on protected requests:
+
+```http
 Authorization: Bearer <access_token>
-
-{
-  "oldPassword": "Admin@123",
-  "newPassword": "NewPassword@123"
-}
 ```
 
-## 7. Seeding a Test User
+There is currently no registration endpoint. To create a development user, generate a bcrypt hash and insert an `ACTIVE` user with one of the roles `ADMIN`, `STAFF`, or `STUDENT`.
 
-Since only the Auth module exists so far, there's no "register" endpoint yet (not requested). To test login, insert a user manually with a bcrypt hash, e.g. via a quick Node script:
+## Student Bulk Upload
 
-```js
-const bcrypt = require("bcrypt");
-bcrypt.hash("Admin@123", 10).then(console.log);
-```
-
-Then insert into MySQL:
-
-```sql
-INSERT INTO users (name, email, password, role, status, created_at, updated_at)
-VALUES ('Admin', 'admin@example.com', '<hash_from_above>', 'ADMIN', 'ACTIVE', NOW(), NOW());
-```
-
-## 8. What's Intentionally Not Here
-
-No Redis, Docker, message queues, microservices, or global `controllers/services/repositories` folders — per the project constraints. No other modules (students, exams, etc.) — only the Auth module, as requested.
-
-## 9. Bulk Upload Students
-
-Send a `multipart/form-data` request to `POST /api/v1/students/bulk-upload` with an admin bearer token. Attach exactly one CSV file; `file` is the recommended field name.
-
-The CSV must contain these headers:
+Administrators can upload one CSV file using `POST /api/v1/students/bulk-upload` with a bearer token. The file is limited to 5 MB and must contain:
 
 ```csv
 usn,name,email,phone,department,semester,section,course
 1AB23CS001,Student One,student1@example.com,9876543210,CSE,1,A,Computer Science
 ```
 
-Uploads are limited to 5 MB. The entire batch is rejected if a required value is missing, a USN/email is duplicated, or a student already exists.
+The entire batch is rejected when required values are missing, a USN or email is duplicated, or a student already exists.
+
+## Useful Commands
+
+Frontend:
+
+```bash
+npm run dev       # start Vite
+npm run build     # create a production build
+npm run lint      # run ESLint
+npm run preview   # preview the production build
+```
+
+Server:
+
+```bash
+npm run dev       # start with Nodemon
+npm start         # start with Nodemon
+```
+
+## Documentation
+
+- [Frontend API contract](client/API_DOCUMENTATION.md)
+- [Server architecture and Auth notes](server/README.md)
+- [Server change history](server/CHANGES.md)
