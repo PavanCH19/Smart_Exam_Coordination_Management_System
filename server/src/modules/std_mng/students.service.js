@@ -1,6 +1,7 @@
 const studentRepository = require("./students.repository");
 const ApiError = require("../../shared/utils/ApiError");
 const { parse } = require("csv-parse/sync");
+const { assertEmailsAvailable } = require("../../shared/utils/emailAvailability.util");
 
 const requiredColumns = [
     "usn",
@@ -14,6 +15,7 @@ const requiredColumns = [
 ];
 
 const addStd = async ({ usn, name, email, phone, department, semester, section, course }) => {
+    email = email.trim().toLowerCase();
 
     const existingUSN = await studentRepository.findStudentByUSN(usn);
 
@@ -21,11 +23,7 @@ const addStd = async ({ usn, name, email, phone, department, semester, section, 
         throw new ApiError(409, "Student with this USN already exists");
     }
 
-    const existingEmail = await studentRepository.findStudentByEmail(email);
-
-    if (existingEmail) {
-        throw new ApiError(409, "Student with this email already exists");
-    }
+    await assertEmailsAvailable([email]);
 
     const student = await studentRepository.insertStudent({ usn, name, email, phone, department, semester, section, course });
 
@@ -190,17 +188,12 @@ const bulkUploadStudents = async (file) => {
         student.email = normalizedEmail;
     });
 
-    const [existingUSNs, existingEmails] = await Promise.all([
-        studentRepository.findStudentsByUSNs([...usns]),
-        studentRepository.findStudentsByEmails([...emails])
-    ]);
+    const existingUSNs = await studentRepository.findStudentsByUSNs([...usns]);
 
     if (existingUSNs.length > 0) {
         throw new ApiError(409, `Student with this USN already exists: ${existingUSNs[0].usn}`);
     }
-    if (existingEmails.length > 0) {
-        throw new ApiError(409, `Student with this email already exists: ${existingEmails[0].email}`);
-    }
+    await assertEmailsAvailable([...emails]);
 
     const insertedStudents = await studentRepository.insertStudents(students);
 

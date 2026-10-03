@@ -15,6 +15,20 @@ const addStaff = async (req, res, next) => {
     }
 };
 
+const bulkUploadStaff = async (req, res, next) => {
+    try {
+        const result = await staffService.bulkUploadStaff(req.file);
+
+        res.status(201).json({
+            success: true,
+            message: "Staff uploaded successfully",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 const getAllStaff = async (req, res, next) => {
 
@@ -139,6 +153,7 @@ const deleteStaff = async (req, res, next) => {
 
 module.exports = {
     addStaff,
+    bulkUploadStaff,
     getAllStaff,
     searchStaff,
     getStaffById,

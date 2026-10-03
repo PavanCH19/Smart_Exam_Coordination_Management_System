@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import ExamPicker from '../components/ui/ExamPicker'
 import { getRoomAllocations } from '../axiosRoutes/roomAllocationRoutes'
-import { getStudents } from '../axiosRoutes/studentRoutes'
 import {
     getSeatingArrangement,
-    saveSeatingArrangement,
+    generateSeating,
 } from '../axiosRoutes/seatingRoutes'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -12,40 +11,6 @@ const selectClass =
     'rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-700 focus:border-brass-400 focus:outline-none focus:ring-1 focus:ring-brass-400'
 
 const SEATS_PER_ROW = 10
-
-// Round-robin interleave: takes groups of students (by section) and weaves
-// them together so consecutive seats rarely share a section — a simple
-// stand-in for "intelligent" mixed seating.
-const interleaveBySection = (students) => {
-    const groups = {}
-    students.forEach((student) => {
-        const key = student.section || 'default'
-        if (!groups[key]) groups[key] = []
-        groups[key].push(student)
-    })
-
-    const queues = Object.values(groups)
-    const result = []
-    let remaining = students.length
-
-    while (remaining > 0) {
-        for (const queue of queues) {
-            if (queue.length > 0) {
-                result.push(queue.shift())
-                remaining -= 1
-            }
-        }
-    }
-
-    return result
-}
-
-const seatLabel = (index) => {
-    const row = Math.floor(index / SEATS_PER_ROW)
-    const col = (index % SEATS_PER_ROW) + 1
-    const rowLetter = String.fromCharCode(65 + row)
-    return `${rowLetter}${col}`
-}
 
 const SeatingManagement = () => {
     const [examId, setExamId] = useState('')
@@ -119,39 +84,28 @@ const SeatingManagement = () => {
             setError(null)
             setNote(null)
 
-            const studentResponse = await getStudents({
-                department: exam.department,
-                semester: exam.semester,
-                limit: selectedAllocation.student_count,
-            })
-
-            let students = studentResponse.data.data || studentResponse.data || []
-            students = students.slice(0, selectedAllocation.student_count)
-
-            if (mixed) {
-                students = interleaveBySection([...students])
-            }
-
-            const generatedSeats = students.map((student, index) => ({
-                seat_number: seatLabel(index),
-                student_id: student.student_id,
-                usn: student.usn,
-                name: student.name,
-                section: student.section,
-            }))
-
-            setSeats(generatedSeats)
-
-            try {
-                await saveSeatingArrangement(
-                    allocationId,
-                    generatedSeats.map(({ seat_number, student_id }) => ({ seat_number, student_id }))
-                )
-            } catch (saveError) {
-                setNote('Seating was generated, but could not be saved to the server.')
-            }
+            const response = await generateSeating(allocationId, { mixed })
+            setSeats(response.data.data || response.data || [])
         } catch (requestError) {
             setError(requestError.response?.data?.message || 'Failed to generate seating')
+        } finally {
+            setGenerating(false)
+        }
+    }
+
+    const handleMixedChange = async (event) => {
+        const nextMixed = event.target.checked
+        setMixed(nextMixed)
+
+        if (!allocationId || seats.length === 0) return
+
+        try {
+            setGenerating(true)
+            setError(null)
+            const response = await generateSeating(allocationId, { mixed: nextMixed })
+            setSeats(response.data.data || response.data || [])
+        } catch (requestError) {
+            setError(requestError.response?.data?.message || 'Failed to update seating arrangement')
         } finally {
             setGenerating(false)
         }
@@ -219,7 +173,8 @@ const SeatingManagement = () => {
                                 <input
                                     type="checkbox"
                                     checked={mixed}
-                                    onChange={(e) => setMixed(e.target.checked)}
+                                    onChange={handleMixedChange}
+                                    disabled={generating}
                                     className="h-4 w-4 rounded border-ink-300 text-brass-500 focus:ring-brass-400"
                                 />
                                 Mixed seating (interleave sections)

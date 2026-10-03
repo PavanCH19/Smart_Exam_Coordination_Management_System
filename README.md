@@ -141,7 +141,20 @@ usn,name,email,phone,department,semester,section,course
 1AB23CS001,Student One,student1@example.com,9876543210,CSE,1,A,Computer Science
 ```
 
-The entire batch is rejected when required values are missing, a USN or email is duplicated, or a student already exists.
+The entire batch is rejected when required values are missing, a USN or email is duplicated, or a student or account with the email already exists.
+
+## Staff Bulk Upload
+
+Administrators can upload one CSV file using `POST /api/v1/staff/bulk-upload` with a bearer token. The file is limited to 5 MB and must contain:
+
+```csv
+employee_id,name,department,email,phone,designation,availability
+EMP001,Staff One,CSE,staff1@example.com,9876543210,Assistant Professor,AVAILABLE
+```
+
+The required columns are `employee_id`, `name`, `department`, `email`, and `designation`. `phone` and `availability` are optional; availability defaults to `AVAILABLE`. The entire batch is rejected when required values are invalid, an employee ID or email is duplicated, or an existing student, staff member, or user account already uses an email.
+
+Email addresses must be unique across student, staff, and user accounts, including administrator accounts.
 
 ## Useful Commands
 

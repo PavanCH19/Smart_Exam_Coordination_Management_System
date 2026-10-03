@@ -6,6 +6,7 @@ const studentRepository = require("../std_mng/students.repository");
 const staffRepository = require("../staff_mng/staff.repository");
 const auditService = require("../audit_mng/audit.service");
 const ApiError = require("../../shared/utils/ApiError");
+const { assertEmailsAvailable } = require("../../shared/utils/emailAvailability.util");
 
 const SALT_ROUNDS = 10;
 
@@ -41,11 +42,14 @@ const resolveProfileLinks = async (role, email) => {
 };
 
 const addUser = async ({ name, email, role, status, password }, actor = {}) => {
+    email = email.trim().toLowerCase();
 
     const existing = await userRepository.findUserByEmail(email);
     if (existing) {
         throw new ApiError(409, "A user with this email already exists");
     }
+
+    await assertEmailsAvailable([email]);
 
     const links = await resolveProfileLinks(role, email);
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);

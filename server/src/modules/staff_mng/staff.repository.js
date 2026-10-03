@@ -18,6 +18,12 @@ const findStaffByEmployeeId = async (employeeId) => {
     });
 };
 
+const findStaffByEmployeeIds = async (employeeIds) => {
+    return await Staff.findAll({
+        where: { employee_id: { [Op.in]: employeeIds } }
+    });
+};
+
 const findAllStaff = async (filters = {}, page = 1, limit = 10) => {
 
     const offset = (page - 1) * limit;
@@ -55,6 +61,10 @@ const insertStaff = async (staff) => {
     return await Staff.create(staff);
 };
 
+const insertStaffs = async (staffMembers) => {
+    return await Staff.bulkCreate(staffMembers);
+};
+
 const updateStaff = async (staffId, staff) => {
 
     return await Staff.update(
@@ -85,10 +95,12 @@ const deleteStaff = async (staffId) => {
 module.exports = {
     findStaffById,
     findStaffByEmployeeId,
+    findStaffByEmployeeIds,
     findStaffByEmail,
     findAllStaff,
     searchStaff,
     insertStaff,
+    insertStaffs,
     updateStaff,
     updateAvailability,
     deleteStaff

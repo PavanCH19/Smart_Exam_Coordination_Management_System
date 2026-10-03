@@ -1,6 +1,10 @@
 const Student = require("./students.model");
 const { Op } = require("sequelize");
 const sequelize = require("../../config/database");
+const Attendance = require("../attendance_mng/attendance.model");
+const AdmitCard = require("../admitcard_mng/admitcard.model");
+const Seat = require("../seating_mng/seat.model");
+const User = require("../auth/user.model");
 
 const findStudentById = async (studentId) => {
     return await Student.findByPk(studentId);
@@ -63,9 +67,31 @@ const updateStudent = async (studentId, student) => {
 };
 
 const deleteStudent = async (studentUsn) => {
-    
-    return await Student.destroy({
-        where: { usn: studentUsn }
+
+    return await sequelize.transaction(async (transaction) => {
+        const student = await Student.findOne({
+            where: { usn: studentUsn },
+            transaction
+        });
+
+        if (!student) {
+            return 0;
+        }
+
+        const dependentRecordFilter = { student_id: student.student_id };
+
+        await Seat.destroy({ where: dependentRecordFilter, transaction });
+        await Attendance.destroy({ where: dependentRecordFilter, transaction });
+        await AdmitCard.destroy({ where: dependentRecordFilter, transaction });
+        await User.destroy({
+            where: { ...dependentRecordFilter, role: "STUDENT" },
+            transaction
+        });
+
+        return await Student.destroy({
+            where: { student_id: student.student_id },
+            transaction
+        });
     });
 };
 

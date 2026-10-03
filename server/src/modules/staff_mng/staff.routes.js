@@ -4,6 +4,7 @@ const staffController = require("./staff.controller");
 
 const authenticate = require("../../shared/middleware/authenticate");
 const authorize = require("../../shared/middleware/authorize");
+const uploadCsv = require("../../shared/middleware/uploadCsv");
 const validate = require("../../shared/middleware/validate");
 const {
     createStaffSchema,
@@ -19,6 +20,10 @@ router.get( "/", authenticate, authorize("ADMIN"), staffController.getAllStaff )
 
 // Search/filter staff by department, designation, availability
 router.get( "/search", authenticate, authorize("ADMIN"), staffController.searchStaff );
+
+// Bulk upload staff
+// employee_id,name,department,email,phone,designation,availability
+router.post( "/bulk-upload", authenticate, authorize("ADMIN"), uploadCsv, staffController.bulkUploadStaff );
 
 // Set/update staff availability
 router.put( "/:id/availability", authenticate, authorize("ADMIN", "STAFF"), validate(updateAvailabilitySchema), staffController.updateAvailability );

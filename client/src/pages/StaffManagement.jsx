@@ -12,6 +12,7 @@ import {
     updateStaff as updateStaffApi,
     updateStaffAvailability,
     deleteStaff as deleteStaffApi,
+    bulkUploadStaff,
 } from '../axiosRoutes/staffRoutes'
 
 import {
@@ -35,6 +36,9 @@ const StaffManagement = () => {
     const [search, setSearch] = useState('')
     const [page, setPage] = useState(1)
     const [formModalOpen, setFormModalOpen] = useState(false)
+    const [csvFile, setCsvFile] = useState(null)
+    const [uploading, setUploading] = useState(false)
+    const [uploadMessage, setUploadMessage] = useState('')
 
 
     // GET ALL STAFF
@@ -298,6 +302,37 @@ const StaffManagement = () => {
         setFormModalOpen(false)
     }
 
+    const handleBulkUpload = async (event) => {
+        event.preventDefault()
+
+        if (!csvFile) {
+            dispatch(setStaffError('Please select a CSV file'))
+            return
+        }
+
+        const formData = new FormData()
+        formData.append('file', csvFile)
+
+        try {
+            setUploading(true)
+            setUploadMessage('')
+            dispatch(setStaffError(null))
+
+            const response = await bulkUploadStaff(formData)
+            const result = response.data.data || {}
+            setCsvFile(null)
+            event.target.reset()
+            setUploadMessage(`Uploaded ${result.count || 0} staff member(s).`)
+            setSearch('')
+            setPage(1)
+            await fetchStaff(1)
+        } catch (error) {
+            dispatch(setStaffError(error.response?.data?.message || 'Failed to upload staff'))
+        } finally {
+            setUploading(false)
+        }
+    }
+
     // RENDER
     return (
         <div className="space-y-6">
@@ -321,6 +356,45 @@ const StaffManagement = () => {
                     {error}
                 </div>
             )}
+
+            {uploadMessage && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    {uploadMessage}
+                </div>
+            )}
+
+            <form onSubmit={handleBulkUpload} className="space-y-4 rounded-2xl border border-dashed border-ink-200 bg-white p-5">
+                <div>
+                    <h2 className="text-sm font-semibold text-ink-800">Bulk upload staff</h2>
+                    <p className="mt-1 text-sm text-ink-500">
+                        Choose a CSV file with employee_id, name, department, email and designation columns.
+                        Phone and availability are optional.
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[260px] flex-1">
+                        <label htmlFor="staff-csv" className="mb-1.5 block text-sm font-medium text-ink-600">
+                            Select staff CSV file
+                        </label>
+                        <input
+                            id="staff-csv"
+                            name="file"
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={(event) => setCsvFile(event.target.files?.[0] || null)}
+                            disabled={uploading}
+                            className="block w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-ink-700 hover:file:bg-ink-200"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={!csvFile || uploading}
+                        className="rounded-lg bg-brass-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brass-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {uploading ? 'Uploading…' : 'Upload CSV'}
+                    </button>
+                </div>
+            </form>
 
             {/* SEARCH */}
             <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-ink-100 bg-white p-4">

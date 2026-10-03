@@ -1,5 +1,7 @@
 const RoomAllocation = require("./allocation.model");
 const Room = require("../room_mng/room.model");
+const Seat = require("../seating_mng/seat.model");
+const sequelize = require("../../config/database");
 
 const roomAttributes = ["room_number", "building", "capacity"];
 
@@ -40,8 +42,16 @@ const updateAllocation = async (allocationId, allocation) => {
 };
 
 const deleteAllocation = async (allocationId) => {
-    return await RoomAllocation.destroy({
-        where: { allocation_id: allocationId }
+    return await sequelize.transaction(async (transaction) => {
+        await Seat.destroy({
+            where: { allocation_id: allocationId },
+            transaction
+        });
+
+        return await RoomAllocation.destroy({
+            where: { allocation_id: allocationId },
+            transaction
+        });
     });
 };
 

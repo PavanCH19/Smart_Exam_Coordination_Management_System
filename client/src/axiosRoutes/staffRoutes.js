@@ -9,6 +9,9 @@ export const searchStaff = (params) => api.get('/staff/search', { params })
 // Add staff
 export const addStaff = (staffData) => api.post('/staff', staffData)
 
+// Bulk upload staff from a CSV file
+export const bulkUploadStaff = (formData) => api.post('/staff/bulk-upload', formData)
+
 // Update staff
 export const updateStaff = (employeeId, staffData) => api.put(`/staff/${employeeId}`, staffData)
 

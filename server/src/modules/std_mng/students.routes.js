@@ -1,11 +1,10 @@
 const express = require("express");
-const multer = require("multer");
 
 const studentController = require("./students.controller");
 
 const authenticate = require("../../shared/middleware/authenticate");
 const authorize = require("../../shared/middleware/authorize");
-const ApiError = require("../../shared/utils/ApiError");
+const uploadCsv = require("../../shared/middleware/uploadCsv");
 const validate = require("../../shared/middleware/validate");
 const {
     createStudentSchema,
@@ -13,44 +12,6 @@ const {
 } = require("./students.validation");
 
 const router = express.Router();
-
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, callback) => {
-
-        const isCsvMimeType = [
-            "text/csv",
-            "application/vnd.ms-excel"
-        ].includes(file.mimetype);
-
-        const hasCsvExtension =
-            file.originalname.toLowerCase().endsWith(".csv");
-
-        if (!isCsvMimeType && !hasCsvExtension) {
-            return callback(
-                new ApiError(400, "Only CSV files are allowed")
-            );
-        }
-
-        callback(null, true);
-    }
-});
-
-const uploadCsv = (req, res, next) => {
-    upload.any()(req, res, (error) => {
-        if (error) {
-            return next(new ApiError(400, error.message));
-        }
-
-        if (!req.files || req.files.length !== 1) {
-            return next(new ApiError(400, "Exactly one CSV file is required"));
-        }
-
-        req.file = req.files[0];
-        next();
-    });
-};
 
 // List students
 router.get("/", authenticate, authorize("ADMIN"), studentController.getAllStudents);

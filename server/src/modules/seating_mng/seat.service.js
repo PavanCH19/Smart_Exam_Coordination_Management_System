@@ -74,11 +74,15 @@ const generateSeating = async (allocationId, { mixed = true }) => {
         throw new ApiError(404, "Exam not found");
     }
 
-    // Don't re-seat a student who's already been placed in another room for
-    // the same exam.
+    // Keep students assigned to other rooms out, but allow this room's current
+    // students back into its candidate pool when regenerating.
     const siblingAllocations = await allocationRepository.findAllocationsByExamId(allocation.exam_id);
-    const siblingAllocationIds = siblingAllocations.map((a) => a.allocation_id);
-    const alreadySeatedIds = await seatRepository.findSeatedStudentIdsForAllocations(siblingAllocationIds);
+    const otherAllocationIds = siblingAllocations
+        .filter((a) => a.allocation_id !== Number(allocationId))
+        .map((a) => a.allocation_id);
+    const alreadySeatedIds = otherAllocationIds.length > 0
+        ? await seatRepository.findSeatedStudentIdsForAllocations(otherAllocationIds)
+        : [];
 
     const { rows: candidateStudents } = await studentRepository.findAllStudents(
         { department: exam.department, semester: exam.semester },

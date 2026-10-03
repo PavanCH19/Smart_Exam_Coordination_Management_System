@@ -13,6 +13,7 @@ const User = require("../../modules/auth/user.model");
 const mailer = require("./mailer");
 const { credentialsEmailTemplate } = require("./emailTemplates");
 const auditService = require("../../modules/audit_mng/audit.service");
+const ApiError = require("./ApiError");
 
 const SALT_ROUNDS = 10;
 
@@ -25,17 +26,11 @@ const provisionLoginAccount = async ({ name, email, role, studentId, employeeId 
         return { created: false, reason: "No email provided" };
     }
 
-    const existing = await User.findOne({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ where: { email: normalizedEmail } });
 
     if (existing) {
-        // A login account already exists for this email (e.g. re-uploaded
-        // via CSV, or an admin created it separately) — leave it untouched.
-        const updates = {};
-        if (role === "STAFF" && !existing.employee_id) updates.employee_id = employeeId;
-        if (role === "STUDENT" && !existing.student_id) updates.student_id = studentId;
-        if (existing.role !== role) updates.role = role;
-        if (Object.keys(updates).length > 0) await existing.update(updates);
-        return { created: false, linked: Object.keys(updates).length > 0, reason: "A login account already exists for this email" };
+        throw new ApiError(409, `Email is already registered: ${normalizedEmail}`);
     }
 
     const temporaryPassword = generateTemporaryPassword();
@@ -47,7 +42,7 @@ const provisionLoginAccount = async ({ name, email, role, studentId, employeeId 
 
     const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         role,
         status: "ACTIVE",
@@ -57,17 +52,17 @@ const provisionLoginAccount = async ({ name, email, role, studentId, employeeId 
 
     const { subject, html } = credentialsEmailTemplate({
         name,
-        email,
+        email: normalizedEmail,
         password: temporaryPassword,
         role
     });
 
-    const emailResult = await mailer.sendMail({ to: email, subject, html });
+    const emailResult = await mailer.sendMail({ to: normalizedEmail, subject, html });
 
     try {
         await auditService.writeLog({
             action: "USER_AUTO_PROVISIONED",
-            target: email,
+            target: normalizedEmail,
             details: `role=${role}, email ${emailResult.sent ? "sent" : "NOT sent (" + emailResult.error + ")"}`
         });
     } catch (error) {

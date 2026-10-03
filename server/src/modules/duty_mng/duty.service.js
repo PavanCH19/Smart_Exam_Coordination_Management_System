@@ -142,25 +142,24 @@ const addDuty = async (examId, { staff_id, room_id, duty_type }) => {
     const activeDuties = await dutyRepository.findDutiesByStaffId(staff.staff_id);
     const assignments = activeDuties.map((item) => {
         const shaped = shapeMyDuty(item);
-        return `${shaped.exam_date} ${shaped.start_time}-${shaped.end_time}: ${shaped.building || ""} ${shaped.room_number || "TBA"}`.trim();
+        const examLabel = [shaped.subject_code, shaped.subject_name].filter(Boolean).join(" — ") || `Exam #${item.exam_id}`;
+        return `${examLabel} — ${shaped.exam_date} ${shaped.start_time}-${shaped.end_time}: ${shaped.building || ""} ${shaped.room_number || "TBA"} (${shaped.duty_type})`.trim();
     });
     const message = assignments.join("\n");
     const user = await User.findOne({ where: { employee_id: staff.employee_id } });
 
     if (user) {
-        const notification = await Notification.create({
+        await Notification.create({
             title: "Examination duty assigned",
             message,
             audience: "STAFF",
             type: "REMINDER",
             recipient_user_id: user.id
         });
-        const email = dutyAssignmentEmailTemplate({ name: staff.name, message });
-        mailer.sendMail({ to: staff.email, ...email }).catch((error) => {
-            console.error("[duty] Assignment email failed:", error.message);
-        });
-        void notification;
     }
+
+    const email = dutyAssignmentEmailTemplate({ name: staff.name, message });
+    await mailer.sendMail({ to: staff.email, ...email });
 
     return shapeDuty(await dutyRepository.findDutyById(duty.duty_id));
 };
