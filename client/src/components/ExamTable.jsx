@@ -29,6 +29,7 @@ const ExamTable = ({ exams, onEdit, onDelete }) => {
                             <th className="px-4 py-3 font-medium">Department</th>
                             <th className="px-4 py-3 font-medium">Semester</th>
                             <th className="px-4 py-3 font-medium">Date</th>
+                            <th className="px-4 py-3 font-medium">Session</th>
                             <th className="px-4 py-3 font-medium">Time</th>
                             <th className="px-4 py-3 font-medium">Status</th>
                             <th className="px-4 py-3 font-medium">Actions</th>
@@ -46,6 +47,7 @@ const ExamTable = ({ exams, onEdit, onDelete }) => {
                                     <td className="px-4 py-3 text-ink-500">{exam.department}</td>
                                     <td className="px-4 py-3 text-ink-500">{exam.semester}</td>
                                     <td className="px-4 py-3 text-ink-500">{formatDate(exam.exam_date)}</td>
+                                    <td className="px-4 py-3 text-ink-500">{exam.exam_session || 'MORNING'}</td>
                                     <td className="px-4 py-3 text-ink-500">
                                         {exam.start_time} – {exam.end_time}
                                     </td>

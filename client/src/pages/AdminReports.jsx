@@ -9,6 +9,7 @@ const REPORT_TYPES = [
     { key: 'attendance', title: 'Student attendance report', description: 'Attendance totals and percentages.', icon: '✅' },
     { key: 'issues', title: 'Issue report', description: 'Reported issues by type and status.', icon: '⚑' },
     { key: 'admit-cards', title: 'Admit card report', description: 'Generation and download status.', icon: '🪪' },
+    { key: 'seat-matrix', title: 'Seat matrix report', description: 'Seat occupancy and room-wise student mapping.', icon: '🪑' },
 ]
 
 const ReportCard = ({ type }) => {
@@ -123,7 +124,7 @@ const AdminReports = () => (
         <PageHeader
             icon="report"
             title="Reports & Analytics"
-            description="Summaries across exams, staff, halls, attendance, issues and admit cards."
+            description="Summaries across exams, staff, halls, attendance, issues, admit cards and seat matrix."
         />
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

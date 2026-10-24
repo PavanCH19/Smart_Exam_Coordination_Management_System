@@ -46,6 +46,12 @@ const Exam = sequelize.define(
             allowNull: false
         },
 
+        exam_session: {
+            type: DataTypes.ENUM("MORNING", "EVENING"),
+            allowNull: false,
+            defaultValue: "MORNING"
+        },
+
         status: {
             type: DataTypes.ENUM("SCHEDULED", "COMPLETED", "CANCELLED"),
             allowNull: false,

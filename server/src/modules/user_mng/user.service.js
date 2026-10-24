@@ -119,16 +119,20 @@ const deleteUser = async (userId, actor = {}) => {
         throw new ApiError(404, "User not found");
     }
 
-    await userRepository.deleteUser(userId);
+    if (existing.role === "ADMIN") {
+        throw new ApiError(400, "Admin accounts cannot be deactivated from this flow");
+    }
+
+    await userRepository.updateUser(userId, { status: "INACTIVE" });
 
     await auditService.writeLog({
         action: "USER_DEACTIVATED",
         performedBy: actor.id,
         target: existing.email,
-        details: null
+        details: `role=${existing.role}`
     });
 
-    return { message: "User removed successfully" };
+    return { message: "User deactivated successfully" };
 };
 
 const resetUserPassword = async (userId, actor = {}) => {

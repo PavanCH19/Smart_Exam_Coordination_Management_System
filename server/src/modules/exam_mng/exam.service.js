@@ -22,11 +22,12 @@ const shapeExam = (examInstance) => {
         exam_date: exam.exam_date,
         start_time: exam.start_time,
         end_time: exam.end_time,
+        exam_session: exam.exam_session || "MORNING",
         status: exam.status
     };
 };
 
-const addExam = async ({ subject_id, exam_date, start_time, end_time, status }) => {
+const addExam = async ({ subject_id, exam_date, start_time, end_time, exam_session, status }) => {
 
     const subject = await subjectRepository.findSubjectById(subject_id);
 
@@ -45,6 +46,7 @@ const addExam = async ({ subject_id, exam_date, start_time, end_time, status }) 
         exam_date,
         start_time,
         end_time,
+        exam_session: exam_session || "MORNING",
         status: status || "SCHEDULED"
     });
 
@@ -237,6 +239,7 @@ const generateTimetable = async ({ department, semester, start_date, end_date },
             exam_date: freeDate,
             start_time: startTime,
             end_time: endTime,
+            exam_session: "MORNING",
             status: "SCHEDULED"
         });
 

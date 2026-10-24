@@ -191,13 +191,69 @@ const buildAdmitCardsReport = async () => {
     return { summary, rows };
 };
 
+const buildSeatMatrixReport = async () => {
+    const RoomAllocation = require("../allocation_mng/allocation.model");
+    const Seat = require("../seating_mng/seat.model");
+    const Exam = require("../exam_mng/exam.model");
+    const Student = require("../std_mng/students.model");
+    const Room = require("../room_mng/room.model");
+
+    const allocations = await RoomAllocation.findAll({
+        include: [
+            { model: Room, attributes: ["room_number", "building", "capacity"] },
+            { model: Exam, attributes: ["exam_date", "start_time", "end_time", "exam_session", "department", "semester"] }
+        ]
+    });
+
+    const seatRows = await Seat.findAll({
+        include: [{ model: Student, attributes: ["usn", "name", "department", "semester"] }],
+        order: [["allocation_id", "ASC"], ["seat_number", "ASC"]]
+    });
+
+    const seatsByAllocation = new Map();
+    seatRows.forEach((seat) => {
+        const allocationId = seat.allocation_id;
+        if (!seatsByAllocation.has(allocationId)) seatsByAllocation.set(allocationId, []);
+        seatsByAllocation.get(allocationId).push({
+            seat_number: seat.seat_number,
+            usn: seat.Student?.usn || "",
+            name: seat.Student?.name || "",
+            department: seat.Student?.department || "",
+            semester: seat.Student?.semester || ""
+        });
+    });
+
+    const rows = allocations.map((allocation) => ({
+        exam_date: allocation.Exam?.exam_date || "",
+        exam_session: allocation.Exam?.exam_session || "MORNING",
+        department: allocation.Exam?.department || "",
+        semester: allocation.Exam?.semester || "",
+        room_number: allocation.Room?.room_number || "",
+        building: allocation.Room?.building || "",
+        capacity: allocation.Room?.capacity || 0,
+        allocated_students: allocation.student_count || 0,
+        seats_booked: (seatsByAllocation.get(allocation.allocation_id) || []).length,
+        seat_map: (seatsByAllocation.get(allocation.allocation_id) || []).map((seat) => `${seat.seat_number}:${seat.usn}`).join("; ")
+    }));
+
+    const summary = {
+        total_allocations: allocations.length,
+        total_students_allocated: rows.reduce((sum, row) => sum + Number(row.allocated_students || 0), 0),
+        morning_sessions: rows.filter((row) => row.exam_session === "MORNING").length,
+        evening_sessions: rows.filter((row) => row.exam_session === "EVENING").length
+    };
+
+    return { summary, rows };
+};
+
 const BUILDERS = {
     "exams": buildExamsReport,
     "staff-duty": buildStaffDutyReport,
     "hall-utilization": buildHallUtilizationReport,
     "attendance": buildAttendanceReport,
     "issues": buildIssuesReport,
-    "admit-cards": buildAdmitCardsReport
+    "admit-cards": buildAdmitCardsReport,
+    "seat-matrix": buildSeatMatrixReport
 };
 
 const getReport = async (type) => {

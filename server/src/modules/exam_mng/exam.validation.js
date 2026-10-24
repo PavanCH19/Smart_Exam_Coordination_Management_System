@@ -2,6 +2,7 @@ const Joi = require("joi");
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const STATUSES = ["SCHEDULED", "COMPLETED", "CANCELLED"];
+const SESSIONS = ["MORNING", "EVENING"];
 
 const createExamSchema = Joi.object({
     subject_id: Joi.number().integer().required(),
@@ -12,10 +13,8 @@ const createExamSchema = Joi.object({
     end_time: Joi.string().pattern(TIME_PATTERN).required().messages({
         "string.pattern.base": "end_time must be in HH:MM format"
     }),
+    exam_session: Joi.string().valid(...SESSIONS).default("MORNING"),
     status: Joi.string().valid(...STATUSES),
-    // Sent redundantly by the frontend (derived client-side from the
-    // selected subject) — accepted but re-derived server-side from
-    // subject_id as the source of truth.
     department: Joi.string().trim().max(100).allow(null, ""),
     semester: Joi.number().integer().allow(null)
 });
@@ -29,6 +28,7 @@ const updateExamSchema = Joi.object({
     end_time: Joi.string().pattern(TIME_PATTERN).messages({
         "string.pattern.base": "end_time must be in HH:MM format"
     }),
+    exam_session: Joi.string().valid(...SESSIONS),
     status: Joi.string().valid(...STATUSES),
     department: Joi.string().trim().max(100).allow(null, ""),
     semester: Joi.number().integer().allow(null)

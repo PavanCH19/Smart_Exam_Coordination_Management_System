@@ -6,6 +6,7 @@ const initialForm = {
     exam_date: '',
     start_time: '',
     end_time: '',
+    exam_session: 'MORNING',
     status: 'SCHEDULED',
 }
 
@@ -62,6 +63,7 @@ const ExamForm = ({ exam, onSubmit, onCancel, existingExams = [] }) => {
                 exam_date: exam.exam_date ? exam.exam_date.slice(0, 10) : '',
                 start_time: exam.start_time || '',
                 end_time: exam.end_time || '',
+                exam_session: exam.exam_session || 'MORNING',
                 status: exam.status || 'SCHEDULED',
             })
         } else {
@@ -122,6 +124,7 @@ const ExamForm = ({ exam, onSubmit, onCancel, existingExams = [] }) => {
             exam_date: formData.exam_date,
             start_time: formData.start_time,
             end_time: formData.end_time,
+            exam_session: formData.exam_session,
             status: formData.status,
             department: selectedSubject?.department,
             semester: selectedSubject?.semester,
@@ -175,6 +178,20 @@ const ExamForm = ({ exam, onSubmit, onCancel, existingExams = [] }) => {
                         required
                         className={inputClass}
                     />
+                </div>
+
+                <div>
+                    <label htmlFor="exam_session" className={labelClass}>Session</label>
+                    <select
+                        id="exam_session"
+                        name="exam_session"
+                        value={formData.exam_session}
+                        onChange={handleChange}
+                        className={inputClass}
+                    >
+                        <option value="MORNING">Morning</option>
+                        <option value="EVENING">Evening</option>
+                    </select>
                 </div>
 
                 <div>
